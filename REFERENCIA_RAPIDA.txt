@@ -1,0 +1,264 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                  REFERENCIA RÁPIDA - HERRAMIENTA ACÚSTICA                  ║
+║                   Cálculo de Reverberación e Impacto (MATLAB)               ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+┌─ EJECUCIÓN RÁPIDA ────────────────────────────────────────────────────────┐
+│                                                                              │
+│  Opción 1: Script automático (recomendado)                                  │
+│  ───────────────────────────────────────────                                │
+│    >> main_acoustics_tool                                                   │
+│                                                                              │
+│  Opción 2: Ejemplo detallado paso a paso                                    │
+│  ─────────────────────────────────────────                                  │
+│    >> ejemplo_completo                                                      │
+│                                                                              │
+│  Opción 3: Verificar instalación                                            │
+│  ───────────────────────────────────                                        │
+│    >> INSTALACION_Y_CONFIGURACION                                           │
+│                                                                              │
+│  Opción 4: Ejecutar pruebas unitarias                                       │
+│  ──────────────────────────────────────                                     │
+│    >> test_herramienta_acustica                                             │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ FUNCIONES DISPONIBLES ───────────────────────────────────────────────────┐
+│                                                                              │
+│ REVERBERACIÓN                                                                │
+│ ═════════════════────────────────────────────────────────────────           │
+│                                                                              │
+│  T = calculate_reverberation_sabine(alpha_m, S, m, V)                       │
+│      Método clásico. Válido para α_m < 0.3                                  │
+│      Entrada: coef.absorción, superficie, atenuación, volumen               │
+│      Salida: T₆₀ en segundos                                                │
+│                                                                              │
+│  T = calculate_reverberation_eyring(alpha_m, S, m, V)                       │
+│      Método para absorción no uniforme. Mejor para α_m > 0.3                │
+│      Entrada: coef.absorción, superficie, atenuación, volumen               │
+│      Salida: T₆₀ en segundos                                                │
+│                                                                              │
+│  T = calculate_reverberation_millington(superficies, S, m, V)               │
+│      Método para materiales heterogéneos (especifica cada material)         │
+│      Entrada: matriz [S_i, alpha_i], ... ; superficie total, atenuación     │
+│      Salida: T₆₀ en segundos                                                │
+│                                                                              │
+│ IMPACTO ACÚSTICO                                                             │
+│ ═════════════════────────────────────────────────────────────────           │
+│                                                                              │
+│  L_i = calculate_impact_level(L_measurements)                               │
+│        Promedio energético de mediciones de impacto                          │
+│        Entrada: matriz [posiciones × frecuencias] en dB                      │
+│        Salida: vector de niveles promediados por frecuencia                  │
+│                                                                              │
+│  L_nT = calculate_standardized_impact_level(L_i, T, T0)                     │
+│         Normalización según reverberación (ISO 16283-2)                      │
+│         Entrada: L_i (niveles), T (reverberación calculada), T₀ (referencia)│
+│         Salida: niveles estandarizados (dB)                                 │
+│                                                                              │
+│  L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)                 │
+│          Ponderación según ISO 717-2 (método de curva)                      │
+│          Entrada: vector de frecuencias [Hz], vector L'_nT [dB]             │
+│          Salida: Valor único ponderado L'_nT,w [dB]                         │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ PARÁMETROS TÍPICOS ──────────────────────────────────────────────────────┐
+│                                                                              │
+│ RECINTO                                                                      │
+│ ──────────────────────────────────────────────────────────────              │
+│  Volumen (V):               50 - 1000 m³                                     │
+│  Superficie (S):            100 - 500 m²                                     │
+│  Coef. absorción (α_m):     0.05 - 0.80 (sin unidad)                       │
+│  Atenuación aire (m):       0.000005 - 0.000015 m⁻¹                        │
+│                             (típico: 0.000007 a 20°C)                       │
+│                                                                              │
+│ MEDICIONES DE IMPACTO                                                        │
+│ ──────────────────────────────────────────────────────────────              │
+│  Niveles de presión (L_j):  30 - 90 dB ref 20 μPa                          │
+│  Posiciones de micrófono:   3 - 6 posiciones típicas                        │
+│  Bandas de frecuencia:      100, 125, 160, ... 3150 Hz (tercio octava)    │
+│  Reverberación de ref.(T₀): 0.5 s (viviendas, ISO 16283)                   │
+│                                                                              │
+│ SALIDAS TÍPICAS                                                              │
+│ ──────────────────────────────────────────────────────────────              │
+│  T₆₀ (reverberación):       0.3 - 2.0 s                                     │
+│  L_i (nivel promediado):    40 - 80 dB                                      │
+│  L'_nT (estandarizado):     40 - 75 dB                                      │
+│  L'_nT,w (ponderado):       30 - 65 dB                                      │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ EJEMPLO DE USO ──────────────────────────────────────────────────────────┐
+│                                                                              │
+│ % Ejemplo 1: Calcular reverberación simple                                  │
+│ ─────────────────────────────────────────────                               │
+│ alpha = 0.20;                    % Coef. absorción media                     │
+│ S = 100;                         % Superficie en m²                          │
+│ V = 250;                         % Volumen en m³                             │
+│ m = 0.000007;                    % Atenuación del aire                       │
+│                                                                              │
+│ T_sabine = calculate_reverberation_sabine(alpha, S, m, V);                  │
+│ T_eyring = calculate_reverberation_eyring(alpha, S, m, V);                  │
+│                                                                              │
+│ fprintf('T₆₀ (Sabine): %.3f s\n', T_sabine);                               │
+│ fprintf('T₆₀ (Eyring): %.3f s\n', T_eyring);                               │
+│                                                                              │
+│                                                                              │
+│ % Ejemplo 2: Calcular impacto acústico completo                             │
+│ ──────────────────────────────────────────────                              │
+│ %---- Mediciones simuladas de 3 posiciones, 4 bandas ----                   │
+│ L_med = [50, 51, 49, 52;                                                    │
+│          51, 50, 52, 51;                                                    │
+│          49, 52, 50, 49];                                                   │
+│                                                                              │
+│ %---- Frecuencias de análisis ----                                          │
+│ freq = [100, 125, 160, 200];                                                │
+│                                                                              │
+│ %---- Cálculos ----                                                         │
+│ L_i = calculate_impact_level(L_med);             % Promedio                  │
+│ L_nT = calculate_standardized_impact_level(...   % Estandarizado             │
+│        L_i, T_sabine, 0.5);                                                 │
+│ L_nTw = calculate_weighted_impact_level(...      % Ponderado                 │
+│         freq, L_nT);                                                        │
+│                                                                              │
+│ fprintf('L´_nT,w = %.1f dB\n', L_nTw);                                     │
+│                                                                              │
+│                                                                              │
+│ % Ejemplo 3: Usar Millington para materiales específicos                    │
+│ ──────────────────────────────────────────────────                          │
+│ superficies = [80, 0.05;     % Paredes: 80 m², α=0.05                       │
+│              20, 0.80;       % Techo: 20 m², α=0.80                         │
+│              30, 0.25];      % Piso: 30 m², α=0.25                          │
+│                                                                              │
+│ T_mill = calculate_reverberation_millington(superficies, 130, ...           │
+│          0.000007, 100);                                                    │
+│                                                                              │
+│ fprintf('T₆₀ (Millington) = %.3f s\n', T_mill);                             │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ NORMAS IMPLEMENTADAS ────────────────────────────────────────────────────┐
+│                                                                              │
+│ ISO 3382-2:2008                                                              │
+│   Measurement of room acoustic parameters – Part 2: Reverberation time      │
+│   • Define cálculos de T₆₀                                                  │
+│   • Sabine, Eyring, otros métodos                                           │
+│                                                                              │
+│ ISO 16283-2:2018                                                             │
+│   Acoustics – Field measurement of sound insulation – Part 2: Impact sound  │
+│   • Medición de aislamiento a ruido de impacto                              │
+│   • Posicionamiento de micrófonos                                           │
+│   • Corrección por reverberación                                            │
+│                                                                              │
+│ ISO 717-2:2020                                                               │
+│   Acoustics – Rating of sound insulation – Part 2: Impact sound             │
+│   • Ponderación y clasificación                                             │
+│   • Método de desplazamiento de curva                                       │
+│   • Curva de referencia normalizada                                         │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ COEFICIENTES DE ABSORCIÓN TÍPICOS ───────────────────────────────────────┐
+│                                                                              │
+│ Material                          | 500 Hz | Aplicación                     │
+│ ──────────────────────────────────┼────────┼─────────────────────────────  │
+│ Hormigón, ladrillo liso            | 0.02-0.05 | Estructuras              │
+│ Yeso, pintura                      | 0.03-0.08 | Paredes                  │
+│ Madera blanda (sin tratar)         | 0.10-0.15 | Pisos, revestimentos     │
+│ Cortinas, tapicería                | 0.30-0.50 | Decoración acústica      │
+│ Lana de roca, espuma               | 0.60-0.80 | Aislamiento acústico     │
+│ Techo acústico comercial           | 0.70-0.90 | Techos falsos            │
+│ Agua (piscina)                     | 0.01      | Muy reflectante          │
+│ Arena                              | 0.30-0.50 | Exterior                 │
+│                                                                              │
+│ Nota: Varían significativamente con la frecuencia                            │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ VALIDACIÓN ──────────────────────────────────────────────────────────────┐
+│                                                                              │
+│ ✓ Implementación exacta de normas ISO                                        │
+│ ✓ Múltiples métodos para verificación cruzada                               │
+│ ✓ Resultados comparables internacionalmente                                 │
+│ ✓ Pruebas unitarias incluidas (test_herramienta_acustica.m)                 │
+│ ✓ Ejemplos funcionales listos para usar                                     │
+│ ✓ Documentación completa (DOCUMENTACION_TECNICA.txt)                        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ SOLUCIÓN DE PROBLEMAS ───────────────────────────────────────────────────┐
+│                                                                              │
+│ "Undefined function 'calculate_reverberation_sabine'"                        │
+│ ────────────────────────────────────────────────────────────                │
+│ Solución:                                                                    │
+│   • Verificar que la carpeta está en el path de MATLAB                       │
+│   • Ejecutar: >> addpath('C:\ruta\correcta')                               │
+│   • Guardar: >> savepath                                                    │
+│                                                                              │
+│ Resultados extraños o fuera de rango                                         │
+│ ─────────────────────────────────────                                       │
+│ Solución:                                                                    │
+│   • Revisar parámetros (α_m debe estar entre 0 y 1)                        │
+│   • Verificar unidades (V en m³, S en m², T en segundos)                   │
+│   • Consultar ejemplo_completo.m para valores correctos                      │
+│   • Revisar DOCUMENTACION_TECNICA.txt                                       │
+│                                                                              │
+│ Los gráficos no se muestran                                                  │
+│ ────────────────────────────────                                            │
+│ Solución:                                                                    │
+│   • Verificar toolkit gráfico: >> graphics_toolkit                          │
+│   • Cambiar si es necesario: >> graphics_toolkit('qt')                      │
+│   • Reiniciar MATLAB                                                        │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ ARCHIVOS DEL PROYECTO ───────────────────────────────────────────────────┐
+│                                                                              │
+│ Archivos principales:                                                        │
+│   • main_acoustics_tool.m                 ⭐ Script automático               │
+│   • ejemplo_completo.m                    🔍 Ejemplo detallado              │
+│                                                                              │
+│ Funciones de reverberación:                                                  │
+│   • calculate_reverberation_sabine.m                                         │
+│   • calculate_reverberation_eyring.m                                         │
+│   • calculate_reverberation_millington.m                                     │
+│                                                                              │
+│ Funciones de impacto:                                                        │
+│   • calculate_impact_level.m                                                 │
+│   • calculate_standardized_impact_level.m                                    │
+│   • calculate_weighted_impact_level.m                                        │
+│                                                                              │
+│ Documentación:                                                               │
+│   • README.md                             (inicio rápido)                    │
+│   • DOCUMENTACION_TECNICA.txt             (referencia exhaustiva)            │
+│   • INSTALACION_Y_CONFIGURACION.m         (setup detallado)                  │
+│   • REFERENCIA_RAPIDA.txt                 (este archivo)                     │
+│                                                                              │
+│ Testing:                                                                     │
+│   • test_herramienta_acustica.m           (pruebas unitarias)               │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─ SOPORTE Y CONTACTO ──────────────────────────────────────────────────────┐
+│                                                                              │
+│ Para más información:                                                        │
+│                                                                              │
+│   • Consultar: DOCUMENTACION_TECNICA.txt (guía completa)                    │
+│   • Ejemplos:  ejemplo_completo.m (caso de uso real)                        │
+│   • Pruebas:   test_herramienta_acustica.m (validación)                     │
+│   • Setup:     INSTALACION_Y_CONFIGURACION.m (instalación)                  │
+│                                                                              │
+│ Versión: 1.0 | Estado: ✅ Operacional | Abril 2026                          │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘

@@ -1,0 +1,267 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║            ESTRUCTURA DEL PROYECTO - HERRAMIENTA DE ACÚSTICA                ║
+║               Cálculo de Reverberación y Ruido de Impacto                   ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+
+📁 DIRECTORIO RAÍZ
+═════════════════════════════════════════════════════════════════════════════
+
+Herramienta-de-cálculo-de-reverberación-y-ruido-impacto/
+│
+├─ 📋 README.md
+│  ├─ Descripción general del proyecto
+│  ├─ Instrucciones de inicio rápido
+│  ├─ Resumen de funcionalidades
+│  ├─ Parámetros de entrada/salida
+│  ├─ Referencias de normas ISO
+│  └─ [Ver para comenzar]
+│
+├─ 📝 REFERENCIA_RAPIDA.txt (ESTE ARCHIVO)
+│  ├─ Resumen visual de estructura del proyecto
+│  ├─ Comandos de ejecución rápida
+│  ├─ Listado de funciones disponibles
+│  └─ Guía visual de organización
+│
+├─ 📖 DOCUMENTACION_TECNICA.txt
+│  ├─ Explicación matemática detallada de cada fórmula
+│  ├─ Parámetros avanzados
+│  ├─ Casos de uso complejos
+│  ├─ Tablas de referencia de materiales
+│  ├─ Valores típicos por tipo de recinto
+│  ├─ Resolución de problemas avanzados
+│  └─ [Consultar para profundización técnica]
+│
+├─ ⚙️ INSTALACION_Y_CONFIGURACION.m
+│  ├─ Requisitos del sistema (MATLAB, SO)
+│  ├─ Pasos de instalación detallados
+│  ├─ Verificación de instalación
+│  ├─ Solución de problemas comunes
+│  ├─ Configuración del path
+│  └─ [Ejecutar para verificar: >> INSTALACION_Y_CONFIGURACION]
+│
+├─ 🧪 test_herramienta_acustica.m
+│  ├─ Suite completa de pruebas unitarias
+│  ├─ Validación de cada función
+│  ├─ Pruebas de integración
+│  ├─ Reporte automático de resultados
+│  ├─ Rango de valores esperados
+│  └─ [Ejecutar para validar: >> test_herramienta_acustica]
+│
+├─ .git/ (repositorio Git)
+│  └─ [Control de versiones]
+│
+│
+├─ ⭐ SCRIPTS PRINCIPALES (EJECUCIÓN)
+│  │
+│  ├─ main_acoustics_tool.m
+│  │  ├─ Script automático principal
+│  │  ├─ Parámetros de ejemplo por defecto
+│  │  ├─ Integración de los dos bloques
+│  │  ├─ Generación automática de gráficos
+│  │  └─ [EJECUTAR CON: >> main_acoustics_tool]
+│  │
+│  └─ ejemplo_completo.m
+│     ├─ Ejemplo práctico detallado
+│     ├─ Análisis paso a paso de aula universitaria
+│     ├─ Explicaciones en consola
+│     ├─ Gráficos mejorados
+│     ├─ Tabla de resultados
+│     └─ [EJECUTAR CON: >> ejemplo_completo]
+│
+│
+├─ 🔧 FUNCIONES DE REVERBERACIÓN
+│  │
+│  ├─ calculate_reverberation_sabine.m
+│  │  ├─ T₆₀ = 0.162 × V / (α_m·S + 4mV)
+│  │  ├─ Método clásico, válido para α_m < 0.3
+│  │  ├─ Entrada: (alpha_m, S, m, V)
+│  │  ├─ Salida: T₆₀ en segundos
+│  │  └─ Uso: T = calculate_reverberation_sabine(0.20, 100, 0.000007, 250)
+│  │
+│  ├─ calculate_reverberation_eyring.m
+│  │  ├─ T₆₀ = 0.162 × V / (-S·ln(1-α_m) + 4mV)
+│  │  ├─ Mejor para absorción no uniforme
+│  │  ├─ Recomendado para α_m > 0.3
+│  │  ├─ Entrada: (alpha_m, S, m, V)
+│  │  ├─ Salida: T₆₀ en segundos
+│  │  └─ Uso: T = calculate_reverberation_eyring(0.25, 100, 0.000007, 250)
+│  │
+│  └─ calculate_reverberation_millington.m
+│     ├─ T₆₀ = 0.162 × V / (Σ[-S_i·ln(1-α_i)] + 4mV)
+│     ├─ Óptimo para materiales heterogéneos
+│     ├─ Especifica absorción de cada superficie
+│     ├─ Entrada: (superficies_matriz, S, m, V)
+│     ├─ Salida: T₆₀ en segundos
+│     └─ Uso: T = calculate_reverberation_millington([80,0.05; 20,0.80], S, m, V)
+│
+│
+├─ 🔊 FUNCIONES DE IMPACTO ACÚSTICO
+│  │
+│  ├─ calculate_impact_level.m
+│  │  ├─ L_i = 10·log₁₀(1/n Σ 10^(L_j/10))
+│  │  ├─ Promedio energético de mediciones
+│  │  ├─ Entrada: matriz [posiciones × frecuencias] en dB
+│  │  ├─ Salida: vector de niveles promediados
+│  │  └─ Uso: L_i = calculate_impact_level(L_measurements)
+│  │
+│  ├─ calculate_standardized_impact_level.m
+│  │  ├─ L'_nT = L_i - 10·log₁₀(T/T₀)
+│  │  ├─ Corrección por reverberación (ISO 16283-2)
+│  │  ├─ Normalización según recinto
+│  │  ├─ Entrada: (L_i, T, T0)
+│  │  ├─ Salida: L'_nT en cada frecuencia
+│  │  └─ Uso: L_nT = calculate_standardized_impact_level(L_i, T, 0.5)
+│  │
+│  └─ calculate_weighted_impact_level.m
+│     ├─ Método ISO 717-2
+│     ├─ Desplazamiento de curva de referencia
+│     ├─ Comparación y ajuste automático
+│     ├─ Entrada: (frecuencias, L_nT)
+│     ├─ Salida: L'_nT,w valor único en dB
+│     └─ Uso: L_nTw = calculate_weighted_impact_level(freq, L_nT)
+│
+│
+└─ 📊 ARCHIVOS ADICIONALES (GENERADOS DURANTE EJECUCIÓN)
+   │
+   └─ Gráficos (figuras)
+      ├─ Comparación de métodos de reverberación
+      ├─ Espectro de impacto acústico
+      ├─ Resumen de resultados
+      └─ [Generados automáticamente al ejecutar scripts]
+
+
+═════════════════════════════════════════════════════════════════════════════
+                         MATRIZ DE EJECUCIÓN
+═════════════════════════════════════════════════════════════════════════════
+
+POR REQUERIMIENTO                    │ EJECUTAR
+─────────────────────────────────────┼──────────────────────────────────────
+Verificar instalación                │ >> INSTALACION_Y_CONFIGURACION
+Análisis automático simple           │ >> main_acoustics_tool
+Ejemplo detallado paso a paso        │ >> ejemplo_completo
+Ejecutar pruebas unitarias           │ >> test_herramienta_acustica
+Consultar documentación técnica      │ Leer: DOCUMENTACION_TECNICA.txt
+Referencia rápida de funciones       │ Leer: REFERENCIA_RAPIDA.txt
+Iniciación rápida                    │ Leer: README.md
+Usar función de reverberación        │ T = calculate_reverberation_*()
+Usar función de impacto              │ L_* = calculate_impact_*()
+Agregar parámetros personalizados    │ Editar: main_acoustics_tool.m
+
+
+═════════════════════════════════════════════════════════════════════════════
+                       FLUJO DE ANÁLISIS TÍPICO
+═════════════════════════════════════════════════════════════════════════════
+
+ENTRADA                              │ FUNCIÓN                  │ SALIDA
+────────────────────────────────────────────────────────────────────────────
+
+Parámetros recinto:                  │                          │
+  • Volumen (V)                      │                          │
+  • Superficie (S)                   │ calculate_              │ T₆₀
+  • Absorción (α_m)                  │ reverberation_*()        │ (segundos)
+  • Atenuación (m)                   │                          │
+                                     │                          │
+Mediciones de impacto:               │                          │
+  • L_measurements [M×N]             │ calculate_impact_        │ L_i
+                                     │ level()                  │ (dB)
+                                     │                          │
+L_i + T₆₀ + Referencia (T₀)         │ calculate_              │ L'_nT
+                                     │ standardized_impact_     │ (dB)
+                                     │ level()                  │
+                                     │                          │
+L'_nT + Frecuencias                  │ calculate_weighted_      │ L'_nT,w
+                                     │ impact_level()           │ (dB final)
+
+
+═════════════════════════════════════════════════════════════════════════════
+                         NORMAS IMPLEMENTADAS
+═════════════════════════════════════════════════════════════════════════════
+
+✓ ISO 3382-2:2008
+  └─ Reverberación, métodos Sabine/Eyring/Millington
+
+✓ ISO 16283-2:2018
+  └─ Aislamiento impacto, normalización, promediado energético
+
+✓ ISO 717-2:2020
+  └─ Ponderación, curva de referencia, desplazamiento
+
+
+═════════════════════════════════════════════════════════════════════════════
+                        CARACTERÍSTICAS CLAVES
+═════════════════════════════════════════════════════════════════════════════
+
+✅ IMPLEMENTACIÓN COMPLETA
+   • 3 métodos de reverberación
+   • Cálculo de impacto en 2 pasos
+   • Ponderación ISO 717-2 con método de curva
+
+✅ USABILIDAD
+   • Scripts automatizados listos para usar
+   • Ejemplos prácticos incluidos
+   • Documentación exhaustiva (3 documentos técnicos)
+
+✅ VALIDACIÓN
+   • Suite de pruebas unitarias completa
+   • Verificación de parámetros automática
+   • Resultados comparables internacionalmente
+
+✅ FLEXIBILIDAD
+   • Parámetros personalizables
+   • Materiales individuales (Millington)
+   • Datos reales o simulados
+
+✅ DOCUMENTACIÓN
+   • README: inicio rápido
+   • REFERENCIA_RAPIDA: funciones y parámetros
+   • DOCUMENTACION_TECNICA: detalle matemático completo
+   • INSTALACION_Y_CONFIGURACION: setup y troubleshooting
+
+
+═════════════════════════════════════════════════════════════════════════════
+                           INFORMACIÓN TÉCNICA
+═════════════════════════════════════════════════════════════════════════════
+
+Lenguaje:           MATLAB R2018a o superior
+Toolboxes:          Ninguno especial (solo MATLAB base)
+Dependencias:       Ninguna externa
+Tamaño:             ~50 MB
+Requisitos RAM:     4 GB mínimo
+Plataformas:        Windows, macOS, Linux
+Licencia:           Uso académico y profesional libre
+Versión:            1.0
+Estado:             ✅ Operacional
+Última actualización: Abril 2026
+
+
+═════════════════════════════════════════════════════════════════════════════
+                              INICIO RÁPIDO
+═════════════════════════════════════════════════════════════════════════════
+
+1. Agregar carpeta al path de MATLAB
+   >> addpath('C:\ruta\del\proyecto')
+   >> savepath
+
+2. Verificar instalación
+   >> INSTALACION_Y_CONFIGURACION
+
+3. Ejecutar análisis automático
+   >> main_acoustics_tool
+
+4. O ejecutar ejemplo detallado
+   >> ejemplo_completo
+
+5. Ejecutar pruebas de validación
+   >> test_herramienta_acustica
+
+
+═════════════════════════════════════════════════════════════════════════════
+
+Para ayuda adicional:
+  • Consultar README.md (inicio)
+  • Consultar REFERENCIA_RAPIDA.txt (este archivo)
+  • Ejecutar INSTALACION_Y_CONFIGURACION.m (verificación)
+  • Consultar DOCUMENTACION_TECNICA.txt (profundización)
+
+Última actualización: Abril 2026 | Versión: 1.0 | Estado: ✅ Operacional

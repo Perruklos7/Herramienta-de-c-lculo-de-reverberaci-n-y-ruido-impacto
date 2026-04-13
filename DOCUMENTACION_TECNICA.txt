@@ -1,0 +1,351 @@
+% DOCUMENTACIÓN TÉCNICA - HERRAMIENTA DE ACÚSTICA
+% =========================================================================
+% 
+% TÍTULO: Herramienta de Cálculo de Reverberación y Ruido de Impacto
+% AUTOR: Proyecto de Acústica (Opción B, Proyecto 1)
+% NORMATIVAS: ISO 3382, ISO 16283, ISO 717
+% LENGUAJE: MATLAB
+%
+% =========================================================================
+%
+% DESCRIPCIÓN GENERAL
+% =========================================================================
+%
+% Esta herramienta permite realizar análisis acústicos completos de un
+% recinto en dos bloques diferenciados:
+%
+% • BLOQUE 1: Cálculo del Tiempo de Reverberación (T60)
+%   - Métodos: Sabine, Eyring, Millington
+%   - Salida: Valores de T60 en segundos
+%
+% • BLOQUE 2: Cálculo del Nivel de Impacto Ponderado (L'nT,w)
+%   - Normalización: ISO 16283-2 + ISO 717-2
+%   - Salida: Valor único ponderado en dB
+%
+% =========================================================================
+%
+% ESTRUCTURA DEL PROYECTO
+% =========================================================================
+%
+% ARCHIVOS INCLUIDOS:
+%
+% 1. main_acoustics_tool.m
+%    └─ Script principal que integra todo el flujo
+%    └─ Parámetros de ejemplo
+%    └─ Generación de gráficos
+%
+% 2. Funciones de Reverberación:
+%    ├─ calculate_reverberation_sabine.m
+%    ├─ calculate_reverberation_eyring.m
+%    └─ calculate_reverberation_millington.m
+%
+% 3. Funciones de Impacto:
+%    ├─ calculate_impact_level.m
+%    ├─ calculate_standardized_impact_level.m
+%    └─ calculate_weighted_impact_level.m
+%
+% 4. Ejemplo completo: ejemplo_completo.m
+%    └─ Aplicación práctica con datos realistas
+%
+% =========================================================================
+%
+% GUÍA DE USO RÁPIDO
+% =========================================================================
+%
+% OPCIÓN 1: Ejecutar el script principal
+% ──────────────────────────────────────────
+% 
+%   >> main_acoustics_tool
+%
+%   Esto ejecutará el análisis completo con los parámetros por defecto
+%   y mostrará gráficos informativos.
+%
+% OPCIÓN 2: Ejecutar el ejemplo completo (MÁS DETALLADO)
+% ──────────────────────────────────────────────────────
+%
+%   >> ejemplo_completo
+%
+%   Muestra un análisis paso a paso de un aula universitaria típica,
+%   con explicaciones detalladas en consola y gráficos mejorados.
+%
+% OPCIÓN 3: Usar las funciones individualmente
+% ──────────────────────────────────────────────
+%
+%   % Cálculo de reverberación
+%   alpha_m = 0.20;  % Coeficiente de absorción medio
+%   S = 100;         % Superficie total en m²
+%   m = 0.000007;    % Atenuación del aire en m⁻¹
+%   V = 500;         % Volumen en m³
+%
+%   T_sabine = calculate_reverberation_sabine(alpha_m, S, m, V);
+%   T_eyring = calculate_reverberation_eyring(alpha_m, S, m, V);
+%   
+%   % Cálculo de impacto
+%   L_measurements = [50, 51, 49]; % Ejemplo: 3 mediciones
+%   L_i = calculate_impact_level(L_measurements);
+%   L_nT = calculate_standardized_impact_level(L_i, T_eyring, 0.5);
+%   L_nTw = calculate_weighted_impact_level([100, 125], L_nT(1:2));
+%
+% =========================================================================
+%
+% VARIABLES Y PARÁMETROS
+% =========================================================================
+%
+% VARIABLES DE ENTRADA - REVERBERACIÓN:
+% ─────────────────────────────────────
+%
+% alpha_m  : Coeficiente de absorción medio del recinto [0, 1]
+%            Rango típico: 0.05 (muy refractante) a 0.8 (muy absorbente)
+%            Ejemplo: α_m = 0.15 (aula típica)
+%
+% S        : Superficie total del recinto [m²]
+%            Cálculo: S = 2(a·h + b·h + a·b) para recinto rectangular
+%            Ejemplo: S = 100 m²
+%
+% m        : Coeficiente de atenuación del sonido en aire [m⁻¹]
+%            Depende de temperatura y humedad relativa
+%            Rango típico: 0.000005 a 0.000015 m⁻¹
+%            Recomendado: m = 0.000007 m⁻¹ (20°C, 50% HR)
+%
+% V        : Volumen del recinto [m³]
+%            Cálculo: V = a × b × h para recinto rectangular
+%            Ejemplo: V = 100 m³
+%
+% superficies : Matriz Nx2 para Millington [Superficie_i, alpha_i]
+%               Cada fila: [área en m², coeficiente de absorción]
+%               Ejemplo: [80, 0.05; 20, 0.80; 30, 0.30]
+%
+% ─────────────────────────────────────────────────────────────────────
+%
+% VARIABLES DE ENTRADA - IMPACTO ACÚSTICO:
+% ────────────────────────────────────────
+%
+% L_measurements : Matriz MxN de mediciones [dB ref 20 μPa]
+%                  M filas = posiciones de micrófono
+%                  N columnas = bandas de frecuencia
+%                  Rango típico: 40 a 80 dB
+%                  Origen: Máquina de impactos normalizada (ISO 16283)
+%
+% frecuencias : Vector de frecuencias de análisis [Hz]
+%               Rango: 100 Hz a 3150 Hz (bandas de tercio de octava)
+%               Valores: [100, 125, 160, 200, 250, 315, 400, 500, ...]
+%
+% T            : Tiempo de reverberación calculado [segundos]
+%                Obtenido de: Sabine, Eyring o Millington
+%                Rango típico: 0.3 a 2.0 segundos
+%
+% T0           : Tiempo de reverberación de referencia [segundos]
+%                Viviendas: T₀ = 0.5 s (recomendado en ISO 16283)
+%                Oficinas: T₀ = 0.5 a 1.0 s
+%
+% =========================================================================
+%
+% FÓRMULAS MATEMÁTICAS IMPLEMENTADAS
+% =========================================================================
+%
+% ┌─ BLOQUE 1: REVERBERACIÓN ────────────────────────────────────────────
+% │
+% │ 1) SABINE:
+% │    T_RS = 0.162 × V / (α_m × S + 4m×V)
+% │    Válido para α_m < 0.3
+% │    Fórmula clásica de la acústica
+% │
+% │ 2) EYRING:
+% │    T_RE = 0.162 × V / (-S×ln(1-α_m) + 4m×V)
+% │    Válido para α_m > 0.3
+% │    Considera absorción no uniforme
+% │
+% │ 3) MILLINGTON:
+% │    T_RM = 0.162 × V / (Σ[-S_i×ln(1-α_i)] + 4m×V)
+% │    Óptima para materiales heterogéneos
+% │    Requiere especificación de cada superficie
+% │
+% └──────────────────────────────────────────────────────────────────────
+%
+% ┌─ BLOQUE 2: IMPACTO ACÚSTICO ─────────────────────────────────────────
+% │
+% │ 1) NIVEL PROMEDIADO (L_i):
+% │    L_i = 10×log₁₀(1/n × Σⱼ 10^(L_j/10))
+% │    Promedio energético de n posiciones de micrófono
+% │
+% │ 2) NIVEL ESTANDARIZADO (L'_nT):
+% │    L'_nT = L_i - 10×log₁₀(T/T₀)
+% │    Normaliza los efectos de reverberación del recinto
+% │    Permite comparar recintos diferentes
+% │
+% │ 3) NIVEL PONDERADO (L'_nT,w) - ISO 717-2:
+% │    Método de comparación con curva de referencia
+% │    a) Toma espectros L'_nT entre 100-3150 Hz
+% │    b) Desplaza curva de referencia en incrementos de 1 dB
+% │    c) Calcula suma de desviaciones desfavorables (UNFAV)
+% │    d) Posiciona curva donde UNFAV < 32 dB (máximo)
+% │    e) Lee L'_nT,w a 500 Hz de la curva desplazada
+% │
+% └──────────────────────────────────────────────────────────────────────
+%
+% =========================================================================
+%
+% NORMATIVAS Y REFERENCIAS
+% =========================================================================
+%
+% ISO 3382-2 (2008)
+% ────────────────
+% "Measurement of room acoustic parameters – Part 2: Reverberation time
+%  in ordinary rooms"
+% Define métodos de medición del tiempo de reverberación
+% Especifica Sabine, Eyring y otros cálculos
+%
+% ISO 16283-2 (2018)
+% ──────────────────
+% "Acoustics – Field measurement of sound insulation in buildings and of
+%  building elements – Part 2: Impact sound insulation"
+% Define procedimiento completo de medición de ruido de impacto
+% Especifica distribución de micrófonos, máquina de impactos, etc.
+%
+% ISO 717-2 (2020)
+% ────────────────
+% "Acoustics – Rating of sound insulation in buildings and of building
+%  elements – Part 2: Impact sound insulation"
+% Define método de ponderación para obtener índice único L'_nT,w
+% Incluye curva de referencia y procedimiento de desplazamiento
+%
+% =========================================================================
+%
+% EJEMPLOS DE COEFICIENTES DE ABSORCIÓN TÍPICOS
+% =========================================================================
+%
+% Material                      Frecuencia   Coef. Absorción
+% ────────────────────────────────────────────────────────────
+% Hormigón, ladrillo liso       500 Hz       0.02 - 0.05
+% Yeso, pintura                             0.03 - 0.08
+% Madera blanda (sin tratar)                0.10 - 0.15
+% Cortinas, tapicería           500 Hz       0.30 - 0.50
+% Lana de roca, espuma acústica  500 Hz       0.60 - 0.80
+% Techo acústico comercial      500 Hz       0.70 - 0.90
+% Agua (piscina)                500 Hz       0.01 (reflectante)
+% Arena                         500 Hz       0.30 - 0.50
+%
+% Nota: Los coeficientes varían significativamente con la frecuencia
+%
+% =========================================================================
+%
+% VALORES TÍPICOS DE T60
+% =========================================================================
+%
+% Tipo de Recinto              T60 típico    Notas
+% ──────────────────────────────────────────────────────────
+% Estudio de grabación         0.2 - 0.4 s   Muy muerto, poco eco
+% Aula / Oficina               0.5 - 1.0 s   Neutral, estándar ISO
+% Sala de conferencias         0.8 - 1.2 s   Buena inteligibilidad
+% Iglesia                      2.0 - 5.0 s   Reverberante
+% Sala de conciertos           1.5 - 2.5 s   Musicalmente equilibrado
+%
+% =========================================================================
+%
+% RANGO DE SALIDAS TÍPICAS
+% =========================================================================
+%
+% L'_nT,w   : Valor único en dB (referencia 20 μPa)
+%
+% Clasificación ISO 717-2 para viviendas:
+%   Excelente:    L'_nT,w < -40 dB
+%   Muy bueno:    -40 a -45 dB
+%   Bueno:        -45 a -50 dB
+%   Aceptable:    -50 a -60 dB
+%   Deficiente:   > -60 dB
+%
+% =========================================================================
+%
+% CÓMO PERSONALIZAR LA HERRAMIENTA
+% =========================================================================
+%
+% 1. CAMBIAR PARÁMETROS DEL RECINTO:
+%    ─────────────────────────────────
+%    En main_acoustics_tool.m, modificar:
+%    
+%    V = 100;               % Volumen nuevo
+%    S = 130;               % Superficie nueva
+%    alpha_m = 0.15;        % Absorción nueva
+%    m = 0.000007;          % Atenuación nueva
+%
+% 2. CAMBIAR MEDICIONES DE IMPACTO:
+%    ───────────────────────────────
+%    En main_acoustics_tool.m, modificar:
+%    
+%    L_measurements = [
+%        50, 51, 49, ...;   % Tus mediciones aquí
+%        51, 50, 52, ...;
+%        ...
+%    ];
+%
+% 3. AGREGAR NUEVOS MÉTODOS:
+%    ────────────────────────
+%    Crear archivos: calculate_reverberation_micrometric.m
+%    Basarse en el template de calculate_reverberation_sabine.m
+%    Llamar desde main_acoustics_tool.m
+%
+% 4. CAMBIAR CURVA DE REFERENCIA ISO 717-2:
+%    ──────────────────────────────────────
+%    En calculate_weighted_impact_level.m:
+%    
+%    curve_ref_level = [62, 62, 61, ... ];  % Nuevos valores
+%
+% =========================================================================
+%
+% PRUEBAS Y VALIDACIÓN
+% =========================================================================
+%
+% CASO DE PRUEBA 1: Aula pequeña
+% ──────────────────────────────
+%   V = 100 m³, S = 130 m², α_m = 0.15, m = 0.000007
+%   Resultado esperado T60: ~0.8 s (método Eyring)
+%   Validación: Comparar con mediciones reales de aula
+%
+% CASO DE PRUEBA 2: Material altamente absorbente
+% ────────────────────────────────────────────────
+%   α_m = 0.70, S = 100 m², V = 500 m³
+%   Método Sabine podría fallar, usar Eyring
+%   Resultado esperado T60: ~0.3 s
+%
+% CASO DE PRUEBA 3: Comparación ISO 717-2
+% ─────────────────────────────────────────
+%   Ejecutar con espectros conocidos
+%   Validar que L'_nT,w coincida con cálculos manuales
+%
+% =========================================================================
+%
+% NOTAS IMPORTANTES
+% =========================================================================
+%
+% ⚠ LIMITACIONES:
+%   • Fórmulas válidas para recintos de geometría "regular"
+%   • Sabine menos precisa si α_m > 0.3 (usar Eyring o Millington)
+%   • No considera difracción, reflexiones especulares complejas
+%   • Datos de entrada deben ser precisos (pequeños errores → grandes desviaciones)
+%
+% ✓ VENTAJAS:
+%   • Cálculos rápidos y estándares internacionales
+%   • Múltiples métodos para comparación
+%   • Interfaz clara y documentada
+%   • Resultados normalizados (comparables con normas)
+%
+% ⓘ CONSEJOS DE USO:
+%   • Siempre usar al menos 2 métodos para verificación
+%   • Contrastar resultados con mediciones reales si es posible
+%   • Documentar fuentes de data de coeficientes de absorción
+%   • Mantener precisión de medidas (volumen, superficie)
+%   • Incluir incertidumbre en cálculos críticos
+%
+% =========================================================================
+%
+% CONTACTO Y MEJORAS
+% =========================================================================
+%
+% Esta herramienta es parte del Proyecto 1 (Opción B) de Acústica.
+% Para mejoras, extensiones o reportes de errores:
+%   
+%   - Documentar el problema específico
+%   - Proporcionar datos de entrada que reproduzcan el error
+%   - Sugerir posible solución o mejora
+%
+% =========================================================================
