@@ -1,5 +1,5 @@
 function L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
-%% CÁLCULO DEL NIVEL PONDERADO DE IMPACTO (L'ₙₜ,w) - ISO 717-2
+%% CÁLCULO DEL NIVEL PONDERADO DE IMPACTO (Lₙₜ,w) - ISO 717-2
 %
 % SINTAXIS:
 %   L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
@@ -13,15 +13,15 @@ function L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
 %   L_nTw       : Valor escalar del nivel ponderado de impacto (dB)
 %
 % DESCRIPCIÓN:
-% El método ISO 717-2 para calcular L'ₙₜ,w NO usa una fórmula matemática simple,
+% El método ISO 717-2 para calcular Lₙₜ,w NO usa una fórmula matemática simple,
 % sino un proceso de comparación y desplazamiento de curva:
 %
-% 1. Se toman los espectros L'ₙₜ entre 100 Hz y 3150 Hz
+% 1. Se toman los espectros Lₙₜ entre 100 Hz y 3150 Hz
 % 2. Se compara con la curva de referencia (definida en ISO 717-2)
 % 3. Se desplaza la curva de referencia en incrementos de 1 dB
 % 4. Se calcula la suma de desviaciones desfavorables (UNFAV)
 % 5. La curva se posiciona de manera que UNFAV < 32 dB, pero máxima
-% 6. Se lee L'ₙₜ,w de la curva de referencia desplazada a 500 Hz
+% 6. Se lee Lₙₜ,w de la curva de referencia desplazada a 500 Hz
 %
 % REFERENCIAS:
 %   ISO 717-2:2020 (Clasificación del aislamiento acústico a ruido de impacto)
@@ -108,7 +108,7 @@ end
 % Aplicar el desplazamiento óptimo
 final_curve = curve_ref_level + best_shift;
 
-% Leer L'ₙₜ,w a 500 Hz
+% Leer Lₙₜ,w a 500 Hz
 idx_500 = find(curve_ref_freq == 500);
 if isempty(idx_500)
     error('Error: No se encuentra la frecuencia de 500 Hz en la curva de referencia.');
@@ -125,7 +125,7 @@ if verbose
     fprintf('  • Rango de análisis: 100 - 3150 Hz\n');
     fprintf('  • Desplazamiento óptimo: %d dB\n', best_shift);
     fprintf('  • Suma de desviaciones desfavorables: %.2f dB\n', best_unfav);
-    fprintf('  • L´ₙₜ,w (valor a 500 Hz): %.1f dB\n', L_nTw);
+    fprintf('  • Lₙₜ,w (valor a 500 Hz): %.1f dB\n', L_nTw);
 end
 
 end
