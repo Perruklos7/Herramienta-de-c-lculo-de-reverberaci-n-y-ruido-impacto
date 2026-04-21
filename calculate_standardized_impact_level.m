@@ -17,7 +17,7 @@ function L_nT = calculate_standardized_impact_level(L_i, T, T0)
 %          en cada banda de frecuencia (dB)
 %
 % FÓRMULA:
-%   L'ₙₜ = L_i - 10*log₁₀(T/T₀)
+%   Lₙₜ = L_i - 10*log₁₀(T/T₀)
 %
 %   donde:
 %   - Corrección acústica: -10*log₁₀(T/T₀) 

@@ -15,33 +15,33 @@ function [L_nT, L_nTw] = calculate_and_plot_impact(frecuencias, L_i, T, T0)
 %   L_nTw       : Valor ponderado de impacto (dB)
 %
 % DESCRIPCIÓN:
-%   Esta función actúa como un "wrapper" independiente. Calcula el L'nT y el 
-%   L'nT,w utilizando las funciones existentes en el proyecto sin modificarlas.
+%   Esta función actúa como un "wrapper" independiente. Calcula el LnT y el 
+%   LnT,w utilizando las funciones existentes en el proyecto sin modificarlas.
 %   Posteriormente, deduce la curva de referencia desplazada y genera una 
 %   gráfica profesional de la evaluación acústica.
 
-    % 1. Calcular L'nT utilizando la función existente intacta
+    % 1. Calcular LnT utilizando la función existente intacta
     L_nT = calculate_standardized_impact_level(L_i, T, T0);
     
-    % 2. Calcular L'nT,w utilizando la función existente intacta
+    % 2. Calcular LnT,w utilizando la función existente intacta
     L_nTw = calculate_weighted_impact_level(frecuencias, L_nT);
     
     % 3. Reconstruir la curva de referencia ISO 717-2 desplazada
-    % Sabiendo que a 500 Hz la curva original vale 56 dB, el desplazamiento
-    % total aplicado matemáticamente es la diferencia: (L_nTw - 56).
+    % Sabiendo que a 500 Hz la curva original vale 60 dB, el desplazamiento
+    % total aplicado matemáticamente es la diferencia: (L_nTw - 60).
     curve_ref_freq = [100, 125, 160, 200, 250, 315, 400, 500, ...
                       630, 800, 1000, 1250, 1600, 2000, 2500, 3150];
-    curve_ref_level = [62, 62, 61, 60, 59, 58, 57, 56, ...
-                       55, 54, 53, 52, 51, 50, 49, 48];
+    curve_ref_level = [62, 62, 62, 62, 62, 62, 61, 60, ...
+                       59, 58, 57, 54, 51, 48, 45, 42];
                        
-    shift = L_nTw - 56; 
+    shift = L_nTw - 60; 
     final_curve = curve_ref_level + shift;
     
     % 4. Crear la figura y graficar
     figure('Name', 'Evaluación de Aislamiento a Ruido de Impacto ISO 717-2', ...
            'NumberTitle', 'off', 'Position', [150 150 800 500]);
     
-    % Graficar L'nT (Espectro estandarizado del recinto)
+    % Graficar LnT (Espectro estandarizado del recinto)
     semilogx(frecuencias, L_nT, 'b-o', 'LineWidth', 2, 'MarkerSize', 6, ...
              'MarkerFaceColor', 'b', 'DisplayName', 'L''_{nT} (Estandarizado)');
     hold on;

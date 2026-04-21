@@ -47,10 +47,10 @@ disp('  -> ¡Figura de Absorción generada con éxito!');
 % =========================================================================
 disp(' ');
 disp('Prueba 2: Ejecutando "calculate_standardized_impact_level_from_absorption"...');
-[L_nT, L_nTw] = calculate_standardized_impact_level_from_absorption(frecuencias, L_i, superficies, V, T0);
+[L_n, L_nw] = calculate_standardized_impact_level_from_absorption(frecuencias, L_i, T_eyring, V);
 
 fprintf('Resultados obtenidos:\n');
-fprintf('  - Nivel ponderado de impacto (L''nT,w): %d dB\n', L_nTw);
+fprintf('  - Nivel normalizado ponderado de impacto (L_n,w): %d dB\n', L_nw);
 disp('  -> ¡Figura de Evaluación de Impacto generada con éxito!');
 
 disp(' ');

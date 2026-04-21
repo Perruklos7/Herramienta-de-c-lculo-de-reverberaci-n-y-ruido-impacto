@@ -1,5 +1,5 @@
 function L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
-%% CÁLCULO DEL NIVEL PONDERADO DE IMPACTO (L'ₙₜ,w) - ISO 717-2
+%% CÁLCULO DEL NIVEL PONDERADO DE IMPACTO (Lₙₜ,w) - ISO 717-2
 %
 % SINTAXIS:
 %   [L_nT, L_nTw] = calculate_weighted_impact_level(frecuencias, L_medidos, T, T0)
@@ -14,15 +14,15 @@ function L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
 %   L_nTw       : Valor escalar del nivel ponderado de impacto (dB)
 %
 % DESCRIPCIÓN:
-% El método ISO 717-2 para calcular L'ₙₜ,w NO usa una fórmula matemática simple,
+% El método ISO 717-2 para calcular Lₙₜ,w NO usa una fórmula matemática simple,
 % sino un proceso de comparación y desplazamiento de curva:
 %
-% 1. Se toman los espectros L'ₙₜ entre 100 Hz y 3150 Hz
+% 1. Se toman los espectros Lₙₜ entre 100 Hz y 3150 Hz
 % 2. Se compara con la curva de referencia (definida en ISO 717-2)
 % 3. Se desplaza la curva de referencia en incrementos de 1 dB
 % 4. Se calcula la suma de desviaciones desfavorables (UNFAV)
 % 5. La curva se posiciona de manera que UNFAV < 32 dB, pero máxima
-% 6. Se lee L'ₙₜ,w de la curva de referencia desplazada a 500 Hz
+% 6. Se lee Lₙₜ,w de la curva de referencia desplazada a 500 Hz
 %
 % REFERENCIAS:
 %   ISO 717-2:2020 (Clasificación del aislamiento acústico a ruido de impacto)
@@ -42,8 +42,8 @@ function L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
 % Representan el nivel "de diseño" para comparación
 curve_ref_freq = [100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, ...
                   1250, 1600, 2000, 2500, 3150];
-curve_ref_level = [62, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, ...
-                   52, 51, 50, 49, 48];
+curve_ref_level = [62, 62, 62, 62, 62, 62, 61, 60, 59, 58, 57, ...
+                   54, 51, 48, 45, 42];
 
 % Encontrar índices de frecuencias relevantes (100-3150 Hz)
 idx_start = find(frecuencias >= 100, 1);
@@ -63,33 +63,29 @@ end
 
 % Algoritmo de desplazamiento de curva (ISO 717-2)
 best_shift = 0;
-best_unfav = -inf;
-for shift = -40:1:40
+best_unfav = 0;
+
+% Se busca el desplazamiento en pasos de 1 dB.
+% Al iterar desde valores negativos hacia positivos, la curva de referencia 
+% va subiendo, lo que hace que las desviaciones desfavorables vayan bajando. 
+% El primer valor que logre que la suma sea <= 32.0 dB será exactamente
+% "lo más grande posible pero no más de 32.0 dB" (cumpliendo la ISO 717-2).
+for shift = -100:1:100
     shifted_curve = curve_ref_level + shift;
     deviations = L_nT_analysis - shifted_curve;
+    
     unfavorable = deviations(deviations > 0);
     sum_unfav = sum(unfavorable);
-    if sum_unfav < 32 && sum_unfav > best_unfav
-        best_unfav = sum_unfav;
+    
+    if sum_unfav <= 32.0
         best_shift = shift;
-    end
-end
-if best_unfav == -inf
-    best_unfav = inf;
-    for shift = -40:1:40
-        shifted_curve = curve_ref_level + shift;
-        deviations = L_nT_analysis - shifted_curve;
-        unfavorable = deviations(deviations > 0);
-        sum_unfav = sum(unfavorable);
-        if sum_unfav < best_unfav
-            best_unfav = sum_unfav;
-            best_shift = shift;
-        end
+        best_unfav = sum_unfav;
+        break;
     end
 end
 final_curve = curve_ref_level + best_shift;
 
-% Leer L'ₙₜ,w a 500 Hz
+% Leer Lₙₜ,w a 500 Hz
 idx_500 = find(curve_ref_freq == 500);
 if isempty(idx_500)
     error('No se encuentra la frecuencia de 500 Hz en la curva de referencia.');
