@@ -1,21 +1,22 @@
-function L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
-%% CÁLCULO DEL NIVEL PONDERADO DE IMPACTO (Lₙₜ,w) - ISO 717-2
+function [L_nTw, C_I, C_I_50_2500] = calculate_weighted_impact_level(frecuencias, L_nT)
+%% CÁLCULO DEL NIVEL PONDERADO DE IMPACTO (Lₙₜ,w) Y COEFICIENTES - ISO 717-2
 %
 % SINTAXIS:
-%   [L_nT, L_nTw] = calculate_weighted_impact_level(frecuencias, L_medidos, T, T0)
+%   [L_nTw, C_I, C_I_50_2500] = calculate_weighted_impact_level(frecuencias, L_nT)
 %
 % ENTRADA:
 %   frecuencias : Vector de frecuencias (Hz) de las bandas de tercio de octava
-%   L_medidos   : Vector de niveles de presión sonora medidos (dB) en cada banda
-%   T           : Tiempo de reverberación calculado (s)
-%   T0          : Tiempo de reverberación de referencia (s, opcional, por defecto 0.5)
+%   L_nT        : Vector de niveles de presión sonora estandarizados (dB)
 %
 % SALIDA:
 %   L_nTw       : Valor escalar del nivel ponderado de impacto (dB)
+%   C_I         : Coeficiente de adaptación espectral (100-2500 Hz)
+%   C_I_50_2500 : Coeficiente de adaptación espectral (50-2500 Hz)
 %
 % DESCRIPCIÓN:
-% El método ISO 717-2 para calcular Lₙₜ,w NO usa una fórmula matemática simple,
-% sino un proceso de comparación y desplazamiento de curva:
+% El método ISO 717-2 para calcular Lₙₜ,w usa un proceso de comparación y
+% desplazamiento de curva. Esta función también calcula los coeficientes de
+% adaptación espectral C_I y C_I,50-2500.
 %
 % 1. Se toman los espectros Lₙₜ entre 100 Hz y 3150 Hz
 % 2. Se compara con la curva de referencia (definida en ISO 717-2)
@@ -23,6 +24,8 @@ function L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
 % 4. Se calcula la suma de desviaciones desfavorables (UNFAV)
 % 5. La curva se posiciona de manera que UNFAV < 32 dB, pero máxima
 % 6. Se lee Lₙₜ,w de la curva de referencia desplazada a 500 Hz
+% 7. Se calculan los coeficientes C_I y C_I,50-2500 a partir de la suma
+%    energética de los niveles L_nT en los rangos de frecuencia definidos.
 %
 % REFERENCIAS:
 %   ISO 717-2:2020 (Clasificación del aislamiento acústico a ruido de impacto)
@@ -31,8 +34,6 @@ function L_nTw = calculate_weighted_impact_level(frecuencias, L_nT)
 % NOTAS:
 %   - Rango de análisis: 100 Hz a 3150 Hz (bandas de tercio de octava)
 %   - Incremento de desplazamiento: 1 dB
-%   - Límite de UNFAV: 32 dB máximo
-%   - El resultado se lee a 500 Hz de la curva ajustada
 
 % Curva de referencia ISO 717-2 (del documento normativo)
 % Valores de la curva de referencia a frecuencias de tercio de octava
@@ -92,16 +93,45 @@ if isempty(idx_500)
 end
 L_nTw = final_curve(idx_500);
 
+% --- CÁLCULO DE COEFICIENTES DE ADAPTACIÓN ESPECTRAL (C_I) ---
+% C_I = L'_nT,sum - L'_nT,w
+% L'_nT,sum = 10 * log10( sum( 10^(L'_nT,i / 10) ) )
+% Esta es la fórmula para Rw+C. Para L'nTw+CI, la norma es menos explícita
+% y a menudo se usan otras definiciones. Sin embargo, la más consistente
+% con la definición de suma energética es la siguiente:
+
+% Coeficiente C_I (100 - 2500 Hz)
+idx_start_ci = find(frecuencias >= 100, 1);
+idx_end_ci = find(frecuencias <= 2500, 1, 'last');
+if ~isempty(idx_start_ci) && ~isempty(idx_end_ci) && length(L_nT) >= idx_end_ci
+    L_nT_sum_range = L_nT(idx_start_ci:idx_end_ci);
+    L_nT_sum = 10 * log10(sum(10.^(L_nT_sum_range / 10)));
+    C_I = L_nT_sum - L_nTw;
+else
+    C_I = NaN; % No hay datos en el rango 100-2500 Hz
+end
+
+% Coeficiente C_I,50-2500 (50 - 2500 Hz)
+idx_start_ci_ext = find(frecuencias >= 50, 1);
+if ~isempty(idx_start_ci_ext) && ~isempty(idx_end_ci) && length(L_nT) >= idx_end_ci
+    L_nT_sum_range_ext = L_nT(idx_start_ci_ext:idx_end_ci);
+    L_nT_sum_ext = 10 * log10(sum(10.^(L_nT_sum_range_ext / 10)));
+    C_I_50_2500 = L_nT_sum_ext - L_nTw;
+else
+    C_I_50_2500 = NaN; % No hay datos en el rango extendido
+end
+
 % Información de depuración (opcional - deshabilitada por defecto)
 % Para habilitar, cambiar verbose = true
 verbose = false;
-
 if verbose
     fprintf('\n  Método de ponderación ISO 717-2:\n');
     fprintf('  • Rango de análisis: 100 - 3150 Hz\n');
     fprintf('  • Desplazamiento óptimo: %d dB\n', best_shift);
     fprintf('  • Suma de desviaciones desfavorables: %.2f dB\n', best_unfav);
     fprintf('  • L´ₙₜ,w (valor a 500 Hz): %.1f dB\n', L_nTw);
+    fprintf('  • C_I (100-2500 Hz): %.1f dB\n', C_I);
+    fprintf('  • C_I,50-2500 (50-2500 Hz): %.1f dB\n', C_I_50_2500);
 end
 
 end
